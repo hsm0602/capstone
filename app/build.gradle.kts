@@ -100,6 +100,12 @@ dependencies {
 //    implementation(libs.androidx.ui.graphics)
 //    implementation(libs.androidx.ui.tooling.preview)
 //    implementation(libs.androidx.material3)
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
 
     // Compose Activity & Navigation (BOM 호환 버전으로)
     implementation("androidx.activity:activity-compose:1.8.0")

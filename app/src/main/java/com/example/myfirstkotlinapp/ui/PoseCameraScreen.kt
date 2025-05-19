@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.myfirstkotlinapp.exercise.ExerciseLogic
 import com.example.myfirstkotlinapp.pose.PoseLandmarkerHelper
+import com.example.myfirstkotlinapp.session.WorkoutSessionManager
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,9 +35,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
 @Composable
-fun PoseCameraScreen() {
+fun PoseCameraScreen(
+    sessionManager: WorkoutSessionManager,
+    onSetComplete: () -> Unit
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    val currentExercise = sessionManager.currentExercise
+    val currentSet = sessionManager.currentSet
+    val exerciseName = currentExercise?.name ?: ""
+    val targetReps = currentSet?.reps ?: 0
 
     // 권한 요청
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -60,24 +69,36 @@ fun PoseCameraScreen() {
 
     val poseHelper = remember {
         PoseLandmarkerHelper(context) { result ->
-            // landmark 처리 or 상태 업데이트
-            if (ExerciseLogic.countSquat(result)) {
+            val counted = when (exerciseName) {
+                "스쿼트" -> ExerciseLogic.countSquat(result)
+                "푸쉬업" -> ExerciseLogic.countPushup(result)
+                else -> false
+            }
+
+            if (counted) {
                 count += 1
                 showCount = true
 
-                // 숫자 표시 잠깐 후 사라지게
                 CoroutineScope(Dispatchers.Main).launch {
-                    delay(500) // 500ms 후 숨김
+                    delay(500)
                     showCount = false
+                }
+
+                if (count >= targetReps) {
+                    onSetComplete()
                 }
             }
         }
     }
 
     val previewView = remember { PreviewView(context) }
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
 
     DisposableEffect(Unit) {
+        val cameraProvider = cameraProviderFuture.get()
+
         onDispose {
+            cameraProvider.unbindAll()
             poseHelper.close()
         }
     }
@@ -109,8 +130,10 @@ fun PoseCameraScreen() {
                 .also {
                     it.setAnalyzer(ContextCompat.getMainExecutor(context)) { imageProxy ->
                         val bitmap = imageProxyToBitmap(imageProxy)
-                        val mpImage = BitmapImageBuilder(bitmap).build()
-                        poseHelper.detectAsync(mpImage, System.currentTimeMillis() * 1000)
+                        if (bitmap != null) {
+                            val mpImage = BitmapImageBuilder(bitmap).build()
+                            poseHelper.detectAsync(mpImage, System.currentTimeMillis() * 1000)
+                        }
                         imageProxy.close()
                     }
                 }
