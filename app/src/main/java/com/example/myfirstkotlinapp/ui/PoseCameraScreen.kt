@@ -33,6 +33,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 
 @Composable
 fun PoseCameraScreen(
@@ -46,6 +48,35 @@ fun PoseCameraScreen(
     val currentSet = sessionManager.currentSet
     val exerciseName = currentExercise?.name ?: ""
     val targetReps = currentSet?.reps ?: 0
+
+    // TTS 초기화
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    var isTtsReady by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.let { textToSpeech ->
+                    val result = textToSpeech.setLanguage(Locale.KOREAN)
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        // 한국어가 지원되지 않으면 영어로 설정
+                        textToSpeech.setLanguage(Locale.ENGLISH)
+                    }
+                    // TTS 속도 조절 (0.5 ~ 2.0, 기본값 1.0)
+                    textToSpeech.setSpeechRate(1.0f)
+                    isTtsReady = true
+                }
+            }
+        }
+    }
+
+    // TTS 정리
+    DisposableEffect(Unit) {
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
+    }
 
     // 권한 요청
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -67,17 +98,34 @@ fun PoseCameraScreen(
     var count by remember { mutableStateOf(0) }
     var showCount by remember { mutableStateOf(false) }
 
+    // 음성 출력 함수
+    fun speakCount(currentCount: Int, target: Int) {
+        if (isTtsReady && tts != null) {
+            val message = when {
+                currentCount < target -> "$currentCount"
+                currentCount >= target -> "목표 달성! $currentCount 개 완료"
+                else -> "$currentCount"
+            }
+            tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+    }
+
     val poseHelper = remember {
         PoseLandmarkerHelper(context) { result ->
             val counted = when (exerciseName) {
                 "스쿼트" -> ExerciseLogic.countSquat(result)
                 "푸쉬업" -> ExerciseLogic.countPushup(result)
+                "풀업" -> ExerciseLogic.countPullup(result)
+                "숄더 프레스" -> ExerciseLogic.countShoulderPress(result)
+                "레그 레이즈" -> ExerciseLogic.countLegRaise(result)
                 else -> false
             }
 
             if (counted) {
                 count += 1
                 showCount = true
+
+                speakCount(count, targetReps)
 
                 CoroutineScope(Dispatchers.Main).launch {
                     delay(500)
@@ -86,6 +134,7 @@ fun PoseCameraScreen(
 
                 if (count >= targetReps) {
                     onSetComplete()
+                    ExerciseLogic.resetCount()
                 }
             }
         }

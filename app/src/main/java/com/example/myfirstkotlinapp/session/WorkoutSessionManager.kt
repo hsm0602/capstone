@@ -46,21 +46,24 @@ class WorkoutSessionManager(
         _setTimings.lastOrNull()?.restEnd = System.currentTimeMillis()
     }
 
-    fun markCurrentSetComplete() {
+    fun markSetAsCompleted() {
         _completedSets.add(Pair(currentExerciseIndex, currentSetIndex))
-        advanceToNextSet()
-        val recordId = recordIds.getOrNull(getFlatSetIndex()) ?: return
-        _setTimings.add(SetTiming(recordId = recordId).apply {
-            workoutStart = System.currentTimeMillis()
-        })
     }
 
-    private fun advanceToNextSet() {
+    fun advanceToNextSet() {
         val sets = currentExercise?.sets ?: return
         currentSetIndex++
         if (currentSetIndex >= sets.size) {
             currentExerciseIndex++
             currentSetIndex = 0
+        }
+
+        // 다음 세트가 있는 경우에만 새로운 SetTiming 생성
+        if (!isFinished) {
+            val recordId = recordIds.getOrNull(getFlatSetIndex()) ?: return
+            _setTimings.add(SetTiming(recordId = recordId).apply {
+                workoutStart = System.currentTimeMillis()
+            })
         }
     }
 

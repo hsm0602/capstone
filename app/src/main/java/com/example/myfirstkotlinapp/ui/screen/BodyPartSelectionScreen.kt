@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.sp
 fun BodyPartSelectionScreen(
     onStartRoutine: (List<String>) -> Unit
 ) {
-    val allParts = listOf("가슴", "등", "하체", "어깨", "팔", "복부")
+    val allParts = listOf("가슴", "등", "하체", "어깨", "팔", "복근")
     val selectedParts = remember { mutableStateListOf<String>() }
 
     Column(

@@ -55,12 +55,13 @@ fun WorkoutScreen() {
                 restDurationSec = 30,
                 onRestComplete = {
                     sessionManager.endRest()
+                    sessionManager.advanceToNextSet()
 
                     // 다음 세트가 있는지 확인하고 운동 시작
                     if (!sessionManager.isFinished) {
                         isResting = false
                         isDoingWorkout = true  // 다음 세트 수행
-                        // 이미 markCurrentSetComplete에서 다음 세트 타이밍이 초기화되었기 때문에
+                        // 이미 markSetAsCompleted에서 다음 세트 타이밍이 초기화되었기 때문에
                         // 여기서는 startWorkout을 호출하지 않음
                     } else {
                         // 모든 운동이 끝난 경우
@@ -76,7 +77,7 @@ fun WorkoutScreen() {
                 sessionManager = sessionManager,
                 onSetComplete = {
                     sessionManager.endWorkout()
-                    sessionManager.markCurrentSetComplete()
+                    sessionManager.markSetAsCompleted()
 
                     if (sessionManager.isFinished) {
                         isDoingWorkout = false

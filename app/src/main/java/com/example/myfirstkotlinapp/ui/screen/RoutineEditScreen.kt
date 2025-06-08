@@ -1,5 +1,6 @@
 package com.example.myfirstkotlinapp.ui.screen
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,15 +33,21 @@ fun RoutineEditScreen(
     var showDialog by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     var availableExercises by remember { mutableStateOf<List<ExerciseDto>>(emptyList()) }
+    val context = LocalContext.current
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 coroutineScope.launch {
                     try {
-                        val response = RetrofitClient.exerciseApi.getExercises(selectedBodyParts)
-                        availableExercises = response
-                        showDialog = true
+                        val sharedPref = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
+                        val token = sharedPref.getString("access_token", null)
+                        if (token != null) {
+                            val authedApi = RetrofitClient.createAuthorizedClient(token)
+                            val response = authedApi.getExercises(selectedBodyParts)
+                            availableExercises = response
+                            showDialog = true
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -79,32 +87,42 @@ fun RoutineEditScreen(
 
                     coroutineScope.launch {
                         try {
-                            exercises.forEach { plan ->
-                                val matched = availableExercises.find { it.name == plan.name }
-                                val exerciseId = matched?.id
-                                val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-
-                                if (exerciseId != null) {
-                                    plan.sets.forEachIndexed { index, set ->
-                                        val record = ExerciseRecordCreateDto(
-                                            date = currentDate,
-                                            sets = index + 1,  // 1번 세트, 2번 세트...
-                                            reps = set.reps,
-                                            weight = set.weight.toFloat()
+                            val sharedPref = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
+                            val token = sharedPref.getString("access_token", null)
+                            if (token != null) {
+                                exercises.forEach { plan ->
+                                    val matched = availableExercises.find { it.name == plan.name }
+                                    val exerciseId = matched?.id
+                                    val currentDate =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
                                         )
 
-                                        val response = RetrofitClient.exerciseApi.postExerciseRecord(
-                                            userId = 1,  // 실제 로그인 유저 ID로 대체
-                                            exerciseId = exerciseId,
-                                            record = record
-                                        )
-                                        createdRecordIds.add(response.recordId)
+                                    if (exerciseId != null) {
+                                        plan.sets.forEachIndexed { index, set ->
+                                            val record = ExerciseRecordCreateDto(
+                                                date = currentDate,
+                                                sets = index + 1,  // 1번 세트, 2번 세트...
+                                                reps = set.reps,
+                                                weight = set.weight.toFloat()
+                                            )
+                                            val authedApi = RetrofitClient.createAuthorizedClient(token)
+                                            val userInfo = authedApi.getCurrentUser()
+                                            val userId = userInfo.id
+                                            val response =
+                                                authedApi.postExerciseRecord(
+                                                    userId = userId,
+                                                    exerciseId = exerciseId,
+                                                    record = record
+                                                )
+
+                                            createdRecordIds.add(response.recordId)
+                                        }
                                     }
                                 }
+
+                                onStartWorkout(exercises, createdRecordIds)
                             }
-
-                            onStartWorkout(exercises, createdRecordIds)
-
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
