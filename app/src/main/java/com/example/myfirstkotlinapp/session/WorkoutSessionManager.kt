@@ -10,7 +10,7 @@ class WorkoutSessionManager(
     val recordIds: List<Int> // 세트별 recordId 저장
 ) {
     private var currentExerciseIndex = 0
-    private var currentSetIndex = 0
+    var currentSetIndex = 0
 
     private var _completedSets: MutableList<Pair<Int, Int>> = mutableListOf()
     val completedSets: List<Pair<Int, Int>> get() = _completedSets

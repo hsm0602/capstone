@@ -36,26 +36,6 @@ fun RoutineEditScreen(
     val context = LocalContext.current
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = {
-                coroutineScope.launch {
-                    try {
-                        val sharedPref = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
-                        val token = sharedPref.getString("access_token", null)
-                        if (token != null) {
-                            val authedApi = RetrofitClient.createAuthorizedClient(token)
-                            val response = authedApi.getExercises(selectedBodyParts)
-                            availableExercises = response
-                            showDialog = true
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }) {
-                Text("+")
-            }
-        },
         modifier = Modifier.fillMaxSize()
     ) { padding ->
         Column(
@@ -78,6 +58,31 @@ fun RoutineEditScreen(
                         }
                     )
                 }
+            }
+
+            // + 버튼: 운동 추가
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        try {
+                            val sharedPref = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
+                            val token = sharedPref.getString("access_token", null)
+                            if (token != null) {
+                                val authedApi = RetrofitClient.createAuthorizedClient(token)
+                                val response = authedApi.getExercises(selectedBodyParts)
+                                availableExercises = response
+                                showDialog = true
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Text("+ 운동 추가")
             }
 
             Button(

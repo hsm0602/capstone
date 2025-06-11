@@ -31,7 +31,6 @@ class LoginActivity : ComponentActivity() {
             MyFirstKotlinAppTheme {
                 LoginScreen(
                     onLoginSuccess = {
-                        //startActivity(Intent(this, MainActivity::class.java))
                         startActivity(Intent(this, WelcomeActivity::class.java))
                         finish()
                     }
@@ -96,7 +95,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             } else {
                                 Toast.makeText(context, "토큰이 비어 있습니다", Toast.LENGTH_SHORT).show()
                             }
-                            onLoginSuccess()
+                            //onLoginSuccess()
                         } else {
                             Toast.makeText(context, "로그인 실패: ${response.code()}", Toast.LENGTH_SHORT).show()
                         }
@@ -125,7 +124,10 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             fontSize = 14.sp,
             modifier = Modifier
                 .padding(top = 8.dp)
-                .clickable { /* 추후 회원가입 연결 */ }
+                .clickable {
+                    val intent = Intent(context, SignupActivity::class.java)
+                    context.startActivity(intent)
+                }
         )
     }
 }

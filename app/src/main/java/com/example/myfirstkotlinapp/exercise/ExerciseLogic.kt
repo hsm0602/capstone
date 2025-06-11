@@ -157,7 +157,7 @@ object ExerciseLogic {
         val elbowY = (leftElbowY + rightElbowY) / 2
 
         val isPushedUp = wristY < shoulderY - 0.02f && elbowY < shoulderY - 0.01f
-        val isLowered = wristY > shoulderY + 0.03f
+        val isLowered = elbowY > shoulderY + 0.03f
 
         if (isLowered && !isDown) {
             isDown = true

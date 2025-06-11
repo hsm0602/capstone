@@ -34,6 +34,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import android.speech.tts.TextToSpeech
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import java.util.Locale
 
 @Composable
@@ -48,6 +56,8 @@ fun PoseCameraScreen(
     val currentSet = sessionManager.currentSet
     val exerciseName = currentExercise?.name ?: ""
     val targetReps = currentSet?.reps ?: 0
+    val currentSetNumber = sessionManager.currentSetIndex + 1 // 세트 번호 (1부터 시작)
+    val totalSets = currentExercise?.sets?.size ?: 0
 
     // TTS 초기화
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
@@ -154,6 +164,47 @@ fun PoseCameraScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+
+        // 운동 정보 표시 (좌측 상단)
+        Card(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.Black.copy(alpha = 0.7f)
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = exerciseName,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "세트: $currentSetNumber / $totalSets",
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "목표: ${targetReps}회",
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "현재: $count / $targetReps",
+                    color = if (count >= targetReps) Color.Green else Color.Yellow,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
 
         if (showCount) {
             Text(
